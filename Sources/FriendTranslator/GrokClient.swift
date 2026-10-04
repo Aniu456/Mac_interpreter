@@ -4,13 +4,32 @@ import Foundation
 enum GrokClient {
     static var home: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("FriendTranslator/Grok", isDirectory: true)
+    }
+    private static var legacyHome: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("WeChatInterpreter/Grok", isDirectory: true)
     }
     static var executable: URL? {
         let bundled = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/grok")
         return FileManager.default.isExecutableFile(atPath: bundled.path) ? bundled : nil
     }
-    static var hasLogin: Bool { FileManager.default.fileExists(atPath: home.appendingPathComponent("auth.json").path) }
+    static var hasLogin: Bool {
+        let activeHome = FileManager.default.fileExists(atPath: home.path) ? home : legacyHome
+        return FileManager.default.fileExists(atPath: activeHome.appendingPathComponent("auth.json").path)
+    }
+
+    // 首次改名启动时复制旧目录；已有的新目录优先，退出登录后不再恢复旧凭据。
+    static func prepareHome(at destination: URL, legacy: URL) throws {
+        let files = FileManager.default
+        if !files.fileExists(atPath: destination.path), files.fileExists(atPath: legacy.path) {
+            try files.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true,
+                                      attributes: [.posixPermissions: 0o700])
+            try files.copyItem(at: legacy, to: destination)
+        }
+        try files.createDirectory(at: destination, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: destination.path)
+    }
 
     static func environment(home: URL) -> [String: String] {
         // 仅传必要系统环境；不继承 API Key、模型代理或其他 harness 配置。
@@ -62,8 +81,8 @@ enum GrokClient {
 
     static func run(arguments: [String], timeout: TimeInterval) async throws -> Data {
         guard let executable else { throw InterpreterError("缺少官方 Grok 登录组件，请使用完整应用包。") }
-        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-        let workspace = FileManager.default.temporaryDirectory.appendingPathComponent("interpreter-grok-\(UUID().uuidString)")
+        try prepareHome(at: home, legacy: legacyHome)
+        let workspace = FileManager.default.temporaryDirectory.appendingPathComponent("friend-translator-grok-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         defer { try? FileManager.default.removeItem(at: workspace) }
         let process = Process()

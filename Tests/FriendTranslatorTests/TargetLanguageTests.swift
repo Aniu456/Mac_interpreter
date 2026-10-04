@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 @preconcurrency import Translation
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 // 固定语言仅是测试样本，产品列表完全来自系统查询。
 extension TargetLanguage {

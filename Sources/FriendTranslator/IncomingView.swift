@@ -102,7 +102,7 @@ struct IncomingView: View {
             VStack(spacing: 8) {
                 Text(incoming.isStarting || incoming.isActive ? "等待朋友开口…" : "从听懂第一句话开始")
                     .font(.system(size: 18, weight: .medium))
-                Text("把开免提的手机放在电脑旁\n点击“听朋友”，原文和中文会出现在这里")
+                Text("让电脑麦克风听清对方的声音\n点击“听朋友”，原文和中文会出现在这里")
                     .font(.callout).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(5)

@@ -3,7 +3,7 @@ import Foundation
 import Speech
 import Testing
 import Translation
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 /// 显式启用的只读环境检查；不录音、不播放、不修改系统路由或下载资源。
 @Test(.enabled(if: ProcessInfo.processInfo.environment["INTERPRETER_CHECK_ENVIRONMENT"] == "1"))

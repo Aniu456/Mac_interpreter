@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 @Test func incomingOriginalAndChineseRemainPaired() {
     var captions = IncomingCaptions()

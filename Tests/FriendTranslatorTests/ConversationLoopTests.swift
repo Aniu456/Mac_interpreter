@@ -1,7 +1,7 @@
 import CoreAudio
 import Foundation
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 @Test @MainActor func threeRepliesPauseCaptureAndResumeFriendWithHistory() async throws {
     let fixture = await ConversationFixture()
@@ -49,7 +49,7 @@ import Testing
     model.stop()
 }
 
-@Test @MainActor func replyCanStartWithoutMacWeChatOrPriorFriendListening() async throws {
+@Test @MainActor func replyCanStartWithoutPriorFriendListening() async throws {
     let fixture = await ConversationFixture()
     fixture.model.editChinese("明天见")
     fixture.model.translate()

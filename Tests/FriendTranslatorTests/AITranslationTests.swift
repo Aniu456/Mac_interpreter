@@ -1,7 +1,7 @@
 import Foundation
 import CoreAudio
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 @Test func deepSeekRequestHasBoundedContextAndNoKeyInBody() throws {
     let input = TranslationInput(text: "Don't change the price: 15 dollars.", source: "en", target: "zh-Hans", context: Array(repeating: String(repeating: "a", count: 1800), count: 8))

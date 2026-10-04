@@ -179,3 +179,12 @@
 - [ ] 播放中立即停止、切换语言或取消启动，不继续输出或恢复旧任务。
 
 双设备空气传声是否通过仍待实测，不能将避开 Mac 微信音频路由问题当作朋友必然听到的证明。
+
+
+## 工程改名：朋友之间语言翻译器（2026-10-04）
+
+- 内部工程、Swift 模块、Xcode target/scheme 和产物统一为 `FriendTranslator`；应用 ID 为 `dev.benny.FriendTranslator`。
+- 项目根目录改为 `friend_translator`，源码与测试目录分别为 `Sources/FriendTranslator` 和 `Tests/FriendTranslatorTests`。
+- 旧偏好、DeepSeek 钥匙串服务和 Grok 登录目录保留迁移兼容；已有新配置优先，退出登录后不重新导入旧登录数据。
+- 当前工作区在新路径完成 Swift 构建及测试：53 项测试中 51 项通过、2 项需要真实环境的测试按条件跳过；其中 3 项覆盖偏好及 Grok 目录迁移。未读取真实密钥、执行登录或使用麦克风。
+- Info.plist、Xcode 工程引用与共享 Scheme 的名称一致性检查通过。目录中已有的 `dist/FriendTranslator.app` 的新应用 ID 与签名校验通过；未自动启动应用，真实旧用户数据迁移仍需首次使用确认。

@@ -26,7 +26,7 @@ final class AppModel {
     let incoming: IncomingModel
     private(set) var phase = Phase.idle
     private(set) var devices: [AudioDevice] = []
-    private(set) var status = "手机微信开免提：听朋友时看中文字幕，回复时说中文并播放外语译文。"
+    private(set) var status = "点击“听朋友”，查看说话原文和中文翻译。"
     private(set) var failure: String?
     private(set) var language: TargetLanguage?
     private(set) var availableLanguages: [TargetLanguage] = []
@@ -207,7 +207,7 @@ final class AppModel {
         guard let language else { fail("请先下载翻译语言包并选择朋友的语言。"); return }
         guard refreshDevices() else { return }
         guard let device = selectedMicrophone else {
-            fail("未找到电脑内建麦克风，暂时无法收听手机声音。"); return
+            fail("未找到电脑内建麦克风，暂时无法识别语音。"); return
         }
         failure = nil
         status = "正在听朋友；轮到你时点“我来说”。"

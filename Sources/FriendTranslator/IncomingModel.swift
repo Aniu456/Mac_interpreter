@@ -10,7 +10,7 @@ final class IncomingModel {
     private(set) var isStarting = false
     private(set) var isPaused = false
     private(set) var language: TargetLanguage?
-    private(set) var status = "手机微信开免提，点“听朋友”后显示外语原文和中文。"
+    private(set) var status = "点“听朋友”后，显示听到的外语原文和中文翻译。"
     private(set) var failure: String?
     private(set) var hostID = UUID()
     var configuration: TranslationSession.Configuration?
@@ -44,7 +44,7 @@ final class IncomingModel {
         self.provider = provider
         failure = nil
         isStarting = true
-        status = "正在准备听手机声音，请允许麦克风和语音识别。"
+        status = "正在准备语音识别，请允许麦克风和语音识别。"
         let token = hostID
         let pair = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
         signals = pair.stream
@@ -65,7 +65,7 @@ final class IncomingModel {
                 startupTimeout = nil
                 isStarting = false
                 isActive = true
-                status = "正在听手机免提中朋友的声音…轮到你时点“我来说”。"
+                status = "正在听取说话内容，原文和翻译会显示在下方。"
                 if provider == .apple {
                     configuration = TranslationSession.Configuration(source: language.localeLanguage, target: Locale.Language(identifier: "zh-Hans"))
                 } else {

@@ -50,13 +50,13 @@ struct ContentView: View {
                 .background(InterpreterStyle.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
-                Text("WeChat 语音翻译")
+                Text("朋友之间语言翻译器")
                     .font(.system(size: 23, weight: .semibold))
-                Text("手机开免提，电脑帮你听懂和回应。")
+                Text("听取说话内容，显示原文和翻译。")
                     .font(.callout).foregroundStyle(.secondary)
             }
             Spacer()
-            InterpreterStatus(title: "手机免提模式", symbol: "iphone.and.arrow.forward")
+            InterpreterStatus(title: "语音听译", symbol: "waveform")
             SettingsLink {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 16))

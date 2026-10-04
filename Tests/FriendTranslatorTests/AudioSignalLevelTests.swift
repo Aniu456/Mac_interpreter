@@ -1,6 +1,6 @@
 import AVFoundation
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 @Test func signalLevelDistinguishesMissingFramesFromSilence() {
     var level = AudioSignalLevel()

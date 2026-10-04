@@ -117,13 +117,22 @@ struct DeepSeekClient: Sendable {
 }
 
 enum DeepSeekKeychain {
-    private static var query: [String: Any] {
+    private static let service = "dev.benny.FriendTranslator.deepseek"
+    private static let legacyService = "dev.benny.WeChatInterpreter.deepseek"
+    private static var query: [String: Any] { query(service: service) }
+    private static func query(service: String) -> [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,
-         kSecAttrService as String: "dev.benny.WeChatInterpreter.deepseek",
+         kSecAttrService as String: service,
          kSecAttrAccount as String: "api-key"]
     }
     static func read() throws -> String? {
-        var query = query
+        if let value = try read(service: service) { return value }
+        guard let previous = try read(service: legacyService) else { return nil }
+        try save(previous)
+        return previous
+    }
+    private static func read(service: String) throws -> String? {
+        var query = query(service: service)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var item: CFTypeRef?
@@ -145,7 +154,10 @@ enum DeepSeekKeychain {
         guard status == errSecSuccess else { throw InterpreterError("无法保存钥匙串（\(status)）。") }
     }
     static func delete() throws {
-        let status = SecItemDelete(query as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else { throw InterpreterError("无法删除钥匙串（\(status)）。") }
+        // 同时删除兼容项，避免下一次读取重新导入已删除的 Key。
+        for service in [legacyService, service] {
+            let status = SecItemDelete(query(service: service) as CFDictionary)
+            guard status == errSecSuccess || status == errSecItemNotFound else { throw InterpreterError("无法删除钥匙串（\(status)）。") }
+        }
     }
 }

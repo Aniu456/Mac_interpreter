@@ -1,7 +1,7 @@
 import CoreAudio
 import Foundation
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 @Test func editsRejectLateTranslations() {
     var draft = Draft()
@@ -51,7 +51,7 @@ import Testing
     #expect(!draft.canPlay)
 }
 
-@Test func phoneModeOnlyUsesBuiltInDevices() {
+@Test func translatorOnlyUsesBuiltInDevices() {
     let blackHole = AudioDevice(id: 1, uid: "BlackHole2ch_UID", name: "BlackHole 2ch", hasInput: true, hasOutput: true, transport: kAudioDeviceTransportTypeVirtual)
     #expect(!blackHole.isBuiltInMicrophone)
     #expect(!blackHole.isBuiltInOutput)

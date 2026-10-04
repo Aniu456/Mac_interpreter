@@ -1,7 +1,7 @@
 import CoreAudio
 import Foundation
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 @Test @MainActor func incomingStartupTimesOutAndCanRetry() async throws {
     let recognizer = DelayedIncomingRecognizer()

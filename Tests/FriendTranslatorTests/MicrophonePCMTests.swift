@@ -2,7 +2,7 @@ import AVFoundation
 import CoreMedia
 import Speech
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 @Test(arguments: [false, true])
 func microphonePCMCopiesInterleavedAndPlanarAudio(interleaved: Bool) throws {

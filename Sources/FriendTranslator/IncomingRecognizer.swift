@@ -71,7 +71,7 @@ final class IncomingRecognizer: IncomingRecognizing {
         capture = microphoneCapture
         do {
             openWindow()
-            onStatus?("正在启动内建麦克风，请将手机微信切到免提…")
+            onStatus?("正在启动内建麦克风，请让电脑听清说话声…")
             try await microphoneCapture.start(uid: device.uid, receiveAudio: { pcm in
                 var level = AudioSignalLevel()
                 level.observe(pcm)
@@ -89,7 +89,7 @@ final class IncomingRecognizer: IncomingRecognizing {
                 if let time = self.pipe.lastSoundTime(), Date().timeIntervalSince(time) < 5 {
                     self.onStatus?("电脑麦克风已收到声音，朋友原文和中文会逐步更新。")
                 } else {
-                    self.onStatus?("等待手机声音。请开启微信免提，确认手机音量，并将手机放在电脑旁。")
+                    self.onStatus?("等待说话声。请靠近电脑麦克风，并确认周围声音清晰。")
                 }
             }
         }

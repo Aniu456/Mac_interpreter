@@ -1,7 +1,7 @@
 import CoreAudio
 import Foundation
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 private let japaneseVoice = SpeechVoice(id: "test-ja", name: "Kyoko", languageIdentifier: "ja-JP")
 private let polishVoice = SpeechVoice(id: "test-pl", name: "Zosia", languageIdentifier: "pl-PL")
@@ -14,7 +14,7 @@ private let polishVoice = SpeechVoice(id: "test-pl", name: "Zosia", languageIden
 }
 
 @Test @MainActor func voicePreferencePersistsPerLanguageAndRecoversAfterDownload() async throws {
-    let suite = "WeChatInterpreterTests.voices.\(UUID().uuidString)"
+    let suite = "FriendTranslatorTests.voices.\(UUID().uuidString)"
     let preferences = try #require(UserDefaults(suiteName: suite))
     defer { preferences.removePersistentDomain(forName: suite) }
     let japanese = TargetLanguage(identifier: "ja")
@@ -51,7 +51,7 @@ private let polishVoice = SpeechVoice(id: "test-pl", name: "Zosia", languageIden
 }
 
 @Test @MainActor func selectedVoiceReachesPlaybackAndCanChangeForReplay() async throws {
-    let suite = "WeChatInterpreterTests.playbackVoice.\(UUID().uuidString)"
+    let suite = "FriendTranslatorTests.playbackVoice.\(UUID().uuidString)"
     let preferences = try #require(UserDefaults(suiteName: suite))
     defer { preferences.removePersistentDomain(forName: suite) }
     let japanese = TargetLanguage(identifier: "ja")

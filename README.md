@@ -9,7 +9,7 @@
 1. 允许麦克风和语音识别权限，准备所需的语言资源。
 2. 选择对方的语言和翻译服务。
 3. 点击“听朋友”，让电脑麦克风听清对方的声音，查看原文和中文翻译。
-4. 暂时不需要翻译时，点击停止。
+4. 暂时不需要收听时，再点同一按钮“暂停收听”；字幕保留，点“听朋友”即可继续。回复时直接点“我来说”，收听自动暂停，译文播放后自动恢复。主界面不再单独提供“停止”按钮；临时中断录音、翻译或播报可按 Esc。
 
 需要回复时，可点击“我来说”，说中文后点击“说完了”；也可以直接输入中文，再翻译并播放。播报期间暂停收音，播放结束后继续听译。
 
@@ -37,15 +37,21 @@
 
 需要 macOS 15+、Swift 6.1+ / Xcode 命令行工具和 Git LFS。Swift 包依赖见 `Package.swift`，版本锁定在 `Package.resolved`。仓库内 Grok 组件为 Apple Silicon 版本。
 
+使用 Xcode 时，打开根目录的 `FriendTranslator.xcodeproj`，等待依赖解析完成，选择 **FriendTranslator → My Mac**，点击 Run（`⌘ R`）。App target 已配置权限说明和 Grok 组件打包，采用本机开发用的 ad-hoc 签名。正式分发需另行配置签名与公证。不要只把源码目录作为文件夹打开。
+
+也可使用命令行构建：
+
 ```sh
-git clone git@github.com:Aniu456/Mac_interpreter.git
-cd Mac_interpreter
+git clone git@github.com:Aniu456/Mac_interpreter.git friend_translator
+cd friend_translator
 git lfs pull
 ./scripts/build-app.sh
-open dist/WeChatInterpreter.app
+open dist/FriendTranslator.app
 ```
 
-请通过 `.app` 启动。构建脚本默认生成本机使用的 ad-hoc 签名开发包，未公证。源代码中的 `WeChatInterpreter` 是沿用的内部工程名称，当前产品名称为“朋友之间语言翻译器”。
+请通过 `.app` 启动。构建脚本默认生成本机使用的 ad-hoc 签名开发包，未公证。内部工程与模块名称为 `FriendTranslator`，应用 ID 为 `dev.benny.FriendTranslator`，项目目录为 `friend_translator`。
+
+旧版升级后会保留语音识别偏好与音色选择，并兼容迁移本机 DeepSeek 密钥和 Grok 登录目录。新登录数据位于 `~/Library/Application Support/FriendTranslator/Grok`。应用 ID 改变后，macOS 可能重新请求麦克风、语音识别或钥匙串访问权限。
 
 ## 验证
 

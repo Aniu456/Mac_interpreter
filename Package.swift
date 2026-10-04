@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "WeChatInterpreter",
+    name: "FriendTranslator",
     platforms: [.macOS(.v15)],
-    products: [.executable(name: "WeChatInterpreter", targets: ["WeChatInterpreter"])],
+    products: [.executable(name: "FriendTranslator", targets: ["FriendTranslator"])],
     dependencies: [.package(url: "https://github.com/FluidInference/FluidAudio.git", exact: "0.15.4")],
     targets: [
-        .executableTarget(name: "WeChatInterpreter", dependencies: [.product(name: "FluidAudio", package: "FluidAudio")]),
-        .testTarget(name: "WeChatInterpreterTests", dependencies: ["WeChatInterpreter"]),
+        .executableTarget(name: "FriendTranslator", dependencies: [.product(name: "FluidAudio", package: "FluidAudio")]),
+        .testTarget(name: "FriendTranslatorTests", dependencies: ["FriendTranslator"]),
     ],
     swiftLanguageModes: [.v6]
 )

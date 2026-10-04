@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
-    <key>CFBundleDisplayName</key><string>WeChat 语音翻译</string>
-    <key>CFBundleExecutable</key><string>WeChatInterpreter</string>
-    <key>CFBundleIdentifier</key><string>dev.benny.WeChatInterpreter</string>
+    <key>CFBundleDisplayName</key><string>朋友之间语言翻译器</string>
+    <key>CFBundleExecutable</key><string>FriendTranslator</string>
+    <key>CFBundleIdentifier</key><string>dev.benny.FriendTranslator</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-    <key>CFBundleName</key><string>WeChatInterpreter</string>
+    <key>CFBundleName</key><string>FriendTranslator</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>0.3.1</string>
     <key>CFBundleVersion</key><string>9</string>
@@ -15,7 +15,7 @@
     <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
-    <key>NSMicrophoneUsageDescription</key><string>使用电脑内建麦克风收听手机免提中的外语，或识别你说的中文；不保存录音。</string>
-    <key>NSSpeechRecognitionUsageDescription</key><string>将手机免提中的朋友外语和你说的中文转写并翻译。默认仅本机识别；开启在线识别后可能由 Apple 服务处理音频。</string>
+    <key>NSMicrophoneUsageDescription</key><string>使用电脑内建麦克风识别说话内容并显示翻译结果；不保存录音。</string>
+    <key>NSSpeechRecognitionUsageDescription</key><string>将听到的外语和你说的中文转写并翻译。默认仅本机识别；开启在线识别后可能由 Apple 服务处理音频。</string>
 </dict>
 </plist>

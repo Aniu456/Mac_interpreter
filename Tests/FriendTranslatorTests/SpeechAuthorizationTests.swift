@@ -2,7 +2,7 @@ import Dispatch
 import Foundation
 import Speech
 import Testing
-@testable import WeChatInterpreter
+@testable import FriendTranslator
 
 // 从主 actor 发起、在后台回复，复现三份真实崩溃报告中的执行路径。
 // 不请求权限、不录音、不发送语音。
