@@ -1,0 +1,25 @@
+# SwiftPM and local build outputs
+.build/
+.swiftpm/
+dist/
+build/
+DerivedData/
+
+# macOS and personal IDE state
+.DS_Store
+xcuserdata/
+*.xcuserstate
+.idea/
+.vscode/
+
+# Local credentials and signing material
+.env
+.env.*
+!.env.example
+*.p12
+*.p8
+*.key
+*.pem
+*.mobileprovision
+auth.json
+.grok/
