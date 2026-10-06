@@ -15,6 +15,10 @@ struct FriendTranslatorApp: App {
             ContentView(model: model)
                 .onAppear {
                     NSApplication.shared.setActivationPolicy(.regular)
+                    if let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+                       let icon = NSImage(contentsOf: iconURL) {
+                        NSApplication.shared.applicationIconImage = icon
+                    }
                     NSApplication.shared.activate(ignoringOtherApps: true)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in

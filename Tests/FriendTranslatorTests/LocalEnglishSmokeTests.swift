@@ -21,13 +21,28 @@ func localEnglishTranscribesSyntheticAudio() async throws {
         try await engine.appendAudio(frame)
         try await engine.processBufferedAudio()
         if await engine.eouDetected {
-            transcript += try await engine.finish() + " "
+            let silence = try #require(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.processingFormat.sampleRate)))
+    silence.frameLength = silence.frameCapacity
+    for buffer in UnsafeMutableAudioBufferListPointer(silence.mutableAudioBufferList) {
+        if let data = buffer.mData { memset(data, 0, Int(buffer.mDataByteSize)) }
+    }
+    try await engine.appendAudio(silence)
+    try await engine.processBufferedAudio()
+    transcript += try await engine.finish() + " "
             await engine.reset()
         }
     }
+    let silence = try #require(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.processingFormat.sampleRate)))
+    silence.frameLength = silence.frameCapacity
+    for buffer in UnsafeMutableAudioBufferListPointer(silence.mutableAudioBufferList) {
+        if let data = buffer.mData { memset(data, 0, Int(buffer.mDataByteSize)) }
+    }
+    try await engine.appendAudio(silence)
+    try await engine.processBufferedAudio()
     transcript += try await engine.finish()
     print("Local English fixture transcript: \(transcript)")
     #expect(transcript.lowercased().contains("meeting"))
     #expect(transcript.lowercased().contains("tomorrow"))
     #expect(transcript.lowercased().contains("morning"))
+    #expect(transcript.lowercased().contains("notebook"))
 }

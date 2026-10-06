@@ -17,6 +17,10 @@ struct AudioDevice: Identifiable, Equatable, Sendable {
     let hasOutput: Bool
     let transport: UInt32
 
+    var isTelegramBridge: Bool {
+        uid == "BlackHole2ch_UID" && hasInput && hasOutput && transport == kAudioDeviceTransportTypeVirtual
+    }
+
     var isBuiltInMicrophone: Bool { hasInput && transport == kAudioDeviceTransportTypeBuiltIn }
     var isBuiltInOutput: Bool { hasOutput && transport == kAudioDeviceTransportTypeBuiltIn }
 }
@@ -45,6 +49,12 @@ enum AudioDevices {
                 transport: try integer(id, kAudioDevicePropertyTransportType)
             )
         }
+    }
+
+    /// 播放监测只读取当前设备，避免反复枚举所有设备和声道配置。
+    static func isConnected(_ device: AudioDevice) throws -> Bool {
+        try integer(device.id, kAudioDevicePropertyDeviceIsAlive) != 0
+            && string(device.id, kAudioDevicePropertyDeviceUID) == device.uid
     }
 
     static func bind(_ node: AVAudioIONode, to device: AudioDeviceID) throws {

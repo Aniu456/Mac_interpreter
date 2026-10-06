@@ -21,7 +21,7 @@ struct SettingsView: View {
             Divider()
             if model.isBusy || model.isHearingFriend {
                 Label("正在收听或播报，请先在主窗口停止，再修改设置。", systemImage: "info.circle")
-                    .font(.callout).foregroundStyle(.secondary)
+                    .font(InterpreterStyle.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24).padding(.top, 16)
             }
@@ -29,15 +29,21 @@ struct SettingsView: View {
                 Section("语音识别") {
                     Toggle("英文使用 Parakeet 本地识别", isOn: $model.localEnglishRecognition)
                     Text("首次使用下载模型，之后在本机识别英文。中文及其他外语保留 Apple 识别。")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(InterpreterStyle.caption).foregroundStyle(.secondary)
                     Toggle("允许 Apple 在线语音识别", isOn: $model.allowNetworkRecognition)
                     Text("关闭时仅使用本地语音模型；开启后 Apple 可能处理音频。")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(InterpreterStyle.caption).foregroundStyle(.secondary)
                 }
                 Section("DeepSeek · API Key") {
                     SecureField("输入 API Key", text: $key)
-                    Picker("翻译模型", selection: $model.deepSeekModel) {
-                        ForEach(DeepSeekModel.allCases) { Text($0.title).tag($0) }
+                    LabeledContent("翻译模型") {
+                        InterpreterMenu(title: model.deepSeekModel.title) {
+                            ForEach(DeepSeekModel.allCases) { option in
+                                InterpreterMenuOption(title: option.title, selected: model.deepSeekModel == option) {
+                                    model.deepSeekModel = option
+                                }
+                            }
+                        }
                     }
                     HStack {
                         Button("保存 Key") {
@@ -50,7 +56,7 @@ struct SettingsView: View {
                             catch { message = error.localizedDescription }
                         }
                     }
-                    Text(message).font(.caption).foregroundStyle(.secondary)
+                    Text(message).font(InterpreterStyle.caption).foregroundStyle(.secondary)
                 }
                 Section("Grok · 浏览器登录") {
                     HStack {
@@ -69,13 +75,13 @@ struct SettingsView: View {
                             }
                         }
                     }
-                    Text(grokMessage).font(.caption).foregroundStyle(.secondary)
+                    Text(grokMessage).font(InterpreterStyle.caption).foregroundStyle(.secondary)
                     Text("通过官方 Grok Build 组件授权，需账户具备对应使用权限。组件在本机保存登录和会话记录。")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(InterpreterStyle.caption).foregroundStyle(.secondary)
                 }
                 Section {
                     Text("选择 DeepSeek 或 Grok 后，当前原文及最近几段上下文会发送给对应服务；不上传麦克风音频。测试连接会发送一句“你好”。AI 译文仍请结合原文核对。")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(InterpreterStyle.caption).foregroundStyle(.secondary)
                 }
             }
             .formStyle(.grouped)
@@ -87,9 +93,10 @@ struct SettingsView: View {
                 }
             }
         }
+        .font(InterpreterStyle.body)
         .tint(InterpreterStyle.accent)
         .background(InterpreterStyle.canvas)
-        .frame(width: 600, height: 740)
+        .frame(width: 760, height: 740)
         .onDisappear { operation?.cancel(); key = "" }
     }
     private func run(_ body: @escaping @MainActor () async -> Void) {

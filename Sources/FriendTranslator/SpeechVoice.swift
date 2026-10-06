@@ -14,8 +14,7 @@ struct SpeechVoice: Identifiable, Equatable, Sendable {
     }
 
     static func available() -> [SpeechVoice] {
-        AVSpeechSynthesisVoice.speechVoices().compactMap { voice in
-            guard AVSpeechSynthesisVoice(identifier: voice.identifier) != nil else { return nil }
+        AVSpeechSynthesisVoice.speechVoices().map { voice in
             let quality: String
             switch voice.quality {
             case .enhanced: quality = "优化音质"

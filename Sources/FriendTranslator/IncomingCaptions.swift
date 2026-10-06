@@ -25,6 +25,14 @@ struct IncomingCaptions {
         }
     }
 
+    mutating func revise(id: UUID, text: String) {
+        guard let index = rows.firstIndex(where: { $0.id == id }), !text.isEmpty else { return }
+        rows[index].original = text
+        rows[index].revision += 1
+        rows[index].chinese = ""
+        rows[index].translationError = nil
+    }
+
     mutating func commit(id: UUID, revision: Int, chinese: String) {
         guard let index = rows.firstIndex(where: { $0.id == id }),
               revision > rows[index].translatedRevision,

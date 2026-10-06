@@ -38,3 +38,22 @@ import Testing
     #expect(captions.rows.first?.original == "2")
     #expect(captions.rows.allSatisfy { $0.chinese.isEmpty })
 }
+
+@Test func revisingOriginalKeepsRowAndClearsItsOldTranslation() {
+    var captions = IncomingCaptions()
+    let first = UUID(), second = UUID()
+    captions.update(id: first, text: "Wrong recognition")
+    captions.commit(id: first, revision: 1, chinese: "旧译文")
+    captions.update(id: second, text: "Another sentence")
+    captions.commit(id: second, revision: 1, chinese: "另一句")
+    captions.revise(id: first, text: "Corrected recognition")
+    #expect(captions.rows.count == 2)
+    #expect(captions.rows[0].id == first)
+    #expect(captions.rows[0].revision == 2)
+    #expect(captions.rows[0].chinese.isEmpty)
+    #expect(captions.rows[1].chinese == "另一句")
+    captions.commit(id: first, revision: 2, chinese: "修正后的译文")
+    #expect(captions.rows[0].chinese == "修正后的译文")
+    captions.revise(id: UUID(), text: "Expired row")
+    #expect(captions.rows.count == 2)
+}

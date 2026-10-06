@@ -62,16 +62,25 @@ private let polishVoice = SpeechVoice(id: "test-pl", name: "Zosia", languageIden
     }, listLanguages: { [japanese] }, listVoices: { [japaneseVoice] }, voicePreferences: preferences)
     await model.refreshLanguages()
     model.selectVoice(japaneseVoice.id)
+    model.selectSpeechRate(0.05)
+    #expect(model.speechRateTitle == "很慢")
     model.editChinese("你好")
     model.translate()
     await model.runTranslation(language: japanese) { _, _ in "こんにちは" }
     #expect(player.voiceIDs == [japaneseVoice.id])
+    #expect(player.rates == [0.05])
+    model.selectSpeechRate(0.6) // 合成期间不改变当前播放语速。
+    #expect(model.speechRate == 0.05)
     model.selectVoice(nil) // 正在合成期间不切换音色。
     #expect(model.selectedVoiceID == japaneseVoice.id)
     player.onFailure?("测试播放失败")
     model.selectVoice(nil)
+    model.selectSpeechRate(0.6)
     model.playTranslation()
     #expect(player.voiceIDs == [japaneseVoice.id, nil])
+    #expect(player.rates == [0.05, 0.6])
+    let reopened = AppModel(listDevices: { [] }, voicePreferences: preferences)
+    #expect(reopened.speechRate == 0.6)
     model.stop()
 }
 
@@ -80,8 +89,29 @@ private let polishVoice = SpeechVoice(id: "test-pl", name: "Zosia", languageIden
     var onFailure: ((String) -> Void)?
     var onPlaybackStarted: (() -> Void)?
     var voiceIDs: [String?] = []
-    func speak(_ text: String, language: TargetLanguage, voiceID: String?, device: AudioDevice) throws {
+    var rates: [Float] = []
+    func speak(_ text: String, language: TargetLanguage, voiceID: String?, rate: Float, device: AudioDevice) throws {
         voiceIDs.append(voiceID)
+        rates.append(rate)
     }
     func stop() {}
+}
+
+@Test @MainActor func languageSwitchReusesVoicesUntilExplicitRefresh() async {
+    let japanese = TargetLanguage(identifier: "ja")
+    let polish = TargetLanguage(identifier: "pl")
+    var scans = 0
+    let model = AppModel(listDevices: { [] }, listLanguages: { [japanese, polish] }, listVoices: {
+        scans += 1
+        return [japaneseVoice, polishVoice]
+    })
+    await model.refreshLanguages()
+    for _ in 0..<20 {
+        model.selectLanguage(polish)
+        model.selectLanguage(japanese)
+    }
+    #expect(scans == 1)
+    #expect(model.availableVoices == [japaneseVoice])
+    model.refreshVoices()
+    #expect(scans == 2)
 }

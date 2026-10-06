@@ -8,7 +8,14 @@ protocol IncomingRecognizing: AnyObject {
     var onFailure: ((String) -> Void)? { get set }
     var onStatus: ((String) -> Void)? { get set }
     func start(device: AudioDevice, language: TargetLanguage, allowNetwork: Bool) async throws
+    func startTelegram(language: TargetLanguage, allowNetwork: Bool) async throws
     func stop()
+}
+
+extension IncomingRecognizing {
+    func startTelegram(language: TargetLanguage, allowNetwork: Bool) async throws {
+        throw InterpreterError("此识别器不支持 Telegram 音频。")
+    }
 }
 
 @MainActor
@@ -16,6 +23,7 @@ final class IncomingRecognizer: IncomingRecognizing {
     var onText: ((UUID, String, Bool) -> Void)?
     var onFailure: ((String) -> Void)?
     var onStatus: ((String) -> Void)?
+    private var telegramCapture: TelegramAudioCapture?
     private var capture: MicrophoneCapture?
     private var pipe = IncomingAudioPipe()
     private var recognizer: SFSpeechRecognizer?
@@ -29,15 +37,25 @@ final class IncomingRecognizer: IncomingRecognizing {
     private var allowNetwork = false
 
     func start(device: AudioDevice, language: TargetLanguage, allowNetwork: Bool) async throws {
+        try await startCapture(device: device, language: language, allowNetwork: allowNetwork)
+    }
+
+    func startTelegram(language: TargetLanguage, allowNetwork: Bool) async throws {
+        try await startCapture(device: nil, language: language, allowNetwork: allowNetwork)
+    }
+
+    private func startCapture(device: AudioDevice?, language: TargetLanguage, allowNetwork: Bool) async throws {
         try Task.checkCancellation()
         stop()
         let token = generation
-        onStatus?("正在检查电脑麦克风权限…")
-        let granted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
-            ? true : await AVCaptureDevice.requestAccess(for: .audio)
-        guard token == generation, !Task.isCancelled else { throw CancellationError() }
-        guard granted else {
-            throw InterpreterError("请在系统设置 → 隐私与安全性 → 麦克风中允许本应用。")
+        if device != nil {
+            onStatus?("正在检查电脑麦克风权限…")
+            let granted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+                ? true : await AVCaptureDevice.requestAccess(for: .audio)
+            guard token == generation, !Task.isCancelled else { throw CancellationError() }
+            guard granted else {
+                throw InterpreterError("请在系统设置 → 隐私与安全性 → 麦克风中允许本应用。")
+            }
         }
         onStatus?("正在检查朋友字幕的语音识别权限…")
         let existingAuthorization = SFSpeechRecognizer.authorizationStatus()
@@ -55,28 +73,39 @@ final class IncomingRecognizer: IncomingRecognizing {
         guard allowNetwork || recognizer.supportsOnDeviceRecognition else {
             throw InterpreterError("本机不支持\(language.title)离线识别。可在应用菜单的“设置”中开启“允许 Apple 在线语音识别”后重试。")
         }
-        guard try AudioDevices.list().contains(where: {
-            $0.id == device.id && $0.uid == device.uid && $0.isBuiltInMicrophone
-        }) else { throw InterpreterError("找不到内建麦克风，请检查设备后重试。") }
+        if let device {
+            guard try AudioDevices.list().contains(where: {
+                $0.id == device.id && $0.uid == device.uid && $0.isBuiltInMicrophone
+            }) else { throw InterpreterError("找不到内建麦克风，请检查设备后重试。") }
+        }
         self.recognizer = recognizer
         self.allowNetwork = allowNetwork
         pipe = IncomingAudioPipe()
         let currentPipe = pipe
-        let microphoneCapture = MicrophoneCapture { [weak self] message in
+        let failure: @Sendable (String) -> Void = { [weak self] message in
             Task { @MainActor in
                 guard let self, self.generation == token else { return }
                 self.fail(message)
             }
         }
-        capture = microphoneCapture
+        let receiveAudio: @Sendable (AVAudioPCMBuffer) -> Void = { pcm in
+            var level = AudioSignalLevel()
+            level.observe(pcm)
+            currentPipe.append(pcm, hasSound: level.hasSignal)
+        }
         do {
             openWindow()
-            onStatus?("正在启动内建麦克风，请让电脑听清说话声…")
-            try await microphoneCapture.start(uid: device.uid, receiveAudio: { pcm in
-                var level = AudioSignalLevel()
-                level.observe(pcm)
-                currentPipe.append(pcm, hasSound: level.hasSignal)
-            })
+            if let device {
+                let microphoneCapture = MicrophoneCapture(onFailure: failure)
+                capture = microphoneCapture
+                onStatus?("正在启动内建麦克风，请让电脑听清说话声…")
+                try await microphoneCapture.start(uid: device.uid, receiveAudio: receiveAudio)
+            } else {
+                let telegram = TelegramAudioCapture()
+                telegramCapture = telegram
+                onStatus?("正在连接 Telegram 音频，请允许屏幕与系统音频录制…")
+                try await telegram.start(receiveAudio: receiveAudio, onFailure: failure)
+            }
             guard token == generation, !Task.isCancelled else { throw CancellationError() }
         } catch {
             if token == generation { stop() }
@@ -87,9 +116,9 @@ final class IncomingRecognizer: IncomingRecognizing {
                 try? await Task.sleep(for: .seconds(3))
                 guard !Task.isCancelled, let self, self.generation == token else { return }
                 if let time = self.pipe.lastSoundTime(), Date().timeIntervalSince(time) < 5 {
-                    self.onStatus?("电脑麦克风已收到声音，朋友原文和中文会逐步更新。")
+                    self.onStatus?(device == nil ? "已收到 Telegram 声音，正在显示原文和中文字幕。" : "电脑麦克风已收到声音，朋友原文和中文会逐步更新。")
                 } else {
-                    self.onStatus?("等待说话声。请靠近电脑麦克风，并确认周围声音清晰。")
+                    self.onStatus?(device == nil ? "等待 Telegram 声音。请接通通话，确认好友没有静音。" : "等待说话声。请靠近电脑麦克风，并确认周围声音清晰。")
                 }
             }
         }
@@ -101,6 +130,8 @@ final class IncomingRecognizer: IncomingRecognizing {
         rotation = nil
         monitor?.cancel()
         monitor = nil
+        telegramCapture?.stop()
+        telegramCapture = nil
         capture?.stop()
         capture = nil
         pipe.replace(with: nil)

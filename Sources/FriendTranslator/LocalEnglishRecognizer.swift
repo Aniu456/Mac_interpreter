@@ -31,6 +31,13 @@ final class LanguageRecognizer: IncomingRecognizing {
         try await selected.start(device: device, language: language, allowNetwork: allowNetwork)
         guard generation == token, !Task.isCancelled else { throw CancellationError() }
     }
+    func startTelegram(language: TargetLanguage, allowNetwork: Bool) async throws {
+        stop()
+        let token = generation
+        active = system
+        try await system.startTelegram(language: language, allowNetwork: allowNetwork)
+        guard generation == token, !Task.isCancelled else { throw CancellationError() }
+    }
     func stop() {
         generation = UUID()
         active?.stop()

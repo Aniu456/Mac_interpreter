@@ -50,6 +50,12 @@ enum SystemLanguages {
                   await status(language, chinese) == .installed else { continue }
             result.insert(TargetLanguage(identifier: language.minimalIdentifier))
         }
-        return result.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        let preferredLanguages = ["ru", "en"]
+        return result.sorted {
+            let left = preferredLanguages.firstIndex(of: $0.id) ?? preferredLanguages.count
+            let right = preferredLanguages.firstIndex(of: $1.id) ?? preferredLanguages.count
+            if left != right { return left < right }
+            return $0.title.localizedStandardCompare($1.title) == .orderedAscending
+        }
     }
 }

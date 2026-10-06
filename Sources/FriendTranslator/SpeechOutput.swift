@@ -24,12 +24,15 @@ protocol SpeechPlaying: AnyObject {
     var onFinished: (() -> Void)? { get set }
     var onFailure: ((String) -> Void)? { get set }
     var onPlaybackStarted: (() -> Void)? { get set }
-    func speak(_ text: String, language: TargetLanguage, voiceID: String?, device: AudioDevice) throws
+    func speak(_ text: String, language: TargetLanguage, voiceID: String?, rate: Float, device: AudioDevice) throws
     func stop()
 }
 
 @MainActor
 final class SpeechOutput: SpeechPlaying {
+    static let rateRange: ClosedRange<Double> = 0.05...0.65
+    static let defaultRate = Double(AVSpeechUtteranceDefaultSpeechRate)
+
     var onFinished: (() -> Void)?
     var onFailure: ((String) -> Void)?
     var onPlaybackStarted: (() -> Void)?
@@ -45,7 +48,7 @@ final class SpeechOutput: SpeechPlaying {
     private var outputDevice: AudioDevice?
     private var sourceLevel = AudioSignalLevel()
 
-    func speak(_ text: String, language: TargetLanguage, voiceID: String?, device: AudioDevice) throws {
+    func speak(_ text: String, language: TargetLanguage, voiceID: String?, rate: Float, device: AudioDevice) throws {
         stop()
         let token = generation
         guard !text.isEmpty, text.count <= 3000 else { throw InterpreterError("译文为空或过长，请分成短句。") }
@@ -63,9 +66,10 @@ final class SpeechOutput: SpeechPlaying {
             }
             voice = automatic
         }
-        guard try AudioDevices.list().contains(where: { $0.uid == device.uid && $0.id == device.id && $0.isBuiltInOutput }) else {
-            throw InterpreterError("找不到内建扬声器，请检查设备后重试。")
+        guard try AudioDevices.list().contains(where: { $0.uid == device.uid && $0.id == device.id && $0.hasOutput }) else {
+            throw InterpreterError("找不到所选播放设备，请检查耳机或扬声器后重试。")
         }
+        if device.isTelegramBridge { try TelegramCallRoute.requireReady(for: device) }
         let audioEngine = AVAudioEngine()
         try AudioDevices.bind(audioEngine.outputNode, to: device.id)
         engine = audioEngine
@@ -75,14 +79,20 @@ final class SpeechOutput: SpeechPlaying {
         ) { @Sendable [weak self] _ in
             Task { @MainActor in
                 guard let self, self.generation == token else { return }
-                self.fail("音频路由发生变化，已停止播放。请检查设备后重试。")
+                guard let engine = self.engine, let device = self.outputDevice else { return }
+                do {
+                    try Self.validateConfiguration(of: engine, device: device, playbackStarted: self.player != nil)
+                    if device.isTelegramBridge { try TelegramCallRoute.requireReady(for: device) }
+                } catch {
+                    self.fail(error.localizedDescription)
+                }
             }
         }
         let speech = AVSpeechSynthesizer()
         synthesizer = speech
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = voice
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        utterance.rate = rate.isFinite ? min(max(rate, Float(Self.rateRange.lowerBound)), Float(Self.rateRange.upperBound)) : AVSpeechUtteranceDefaultSpeechRate
         speech.write(utterance) { @Sendable [weak self] buffer in
             guard let pcm = buffer as? AVAudioPCMBuffer else {
                 Task { @MainActor in
@@ -113,10 +123,19 @@ final class SpeechOutput: SpeechPlaying {
                 try? await Task.sleep(for: .milliseconds(250))
                 guard !Task.isCancelled, let self, self.generation == token else { return }
                 do {
-                    guard try AudioDevices.list().contains(where: { $0.uid == device.uid && $0.id == device.id }) else {
+                    let connected = try await Task.detached(priority: .utility) {
+                        let connected = try AudioDevices.isConnected(device)
+                        if connected, device.isTelegramBridge { try TelegramCallRoute.requireReady(for: device) }
+                        return connected
+                    }.value
+                    guard !Task.isCancelled, self.generation == token else { return }
+                    guard connected else {
                         self.fail("输出设备已断开，已停止播放。"); return
                     }
-                } catch { self.fail(error.localizedDescription); return }
+                } catch {
+                    guard !Task.isCancelled, self.generation == token else { return }
+                    self.fail(error.localizedDescription); return
+                }
             }
         }
     }
@@ -167,9 +186,21 @@ final class SpeechOutput: SpeechPlaying {
         engine.prepare()
         try engine.start()
         try AudioDevices.verifyBinding(engine.outputNode, to: outputDevice.id)
+        if outputDevice.isTelegramBridge { try TelegramCallRoute.requireReady(for: outputDevice) }
         node.play()
         onPlaybackStarted?()
         armTimeout(seconds: duration + 10, token: token, message: "音频播放未正常结束，请检查输出设备。")
+    }
+
+    /// 绑定输出设备也会延迟发送配置通知；只在连接失效或已开始的播放被中断时失败。
+    static func validateConfiguration(of engine: AVAudioEngine, device: AudioDevice, playbackStarted: Bool) throws {
+        guard try AudioDevices.isConnected(device) else {
+            throw InterpreterError("输出设备已断开，已停止播放。")
+        }
+        try AudioDevices.verifyBinding(engine.outputNode, to: device.id)
+        guard !playbackStarted || engine.isRunning else {
+            throw InterpreterError("音频路由发生变化，已停止播放。请检查设备后重试。")
+        }
     }
 
     private func armTimeout(seconds: Double, token: UUID, message: String) {
