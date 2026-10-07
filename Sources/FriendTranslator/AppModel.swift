@@ -28,6 +28,7 @@ final class AppModel {
     @ObservationIgnored private let ai: any AITranslating
     @ObservationIgnored private var cloudTask: Task<Void, Never>?
     private(set) var draft = Draft()
+    @ObservationIgnored private var dictation = DictationTranscript()
     let incoming: IncomingModel
     private(set) var phase = Phase.idle
     private(set) var devices: [AudioDevice] = []
@@ -76,6 +77,7 @@ final class AppModel {
     var selectedSpeaker: AudioDevice? { monitors.first { $0.id == monitorID } }
     var isHearingFriend: Bool { incoming.isActive || incoming.isStarting }
     var isCapturingChinese: Bool { phase == .authorizing || phase == .listening || phase == .finalizing }
+    var canEditChinese: Bool { !isBusy || isCapturingChinese }
     var displayStatus: String {
         if isBusy { return status }
         if isHearingFriend || incoming.isPaused { return incoming.status }
@@ -113,13 +115,13 @@ final class AppModel {
         }
         microphone.onPartial = { [weak self] text in
             guard let self, self.isCapturingChinese else { return }
-            self.draft.edit(text)
+            self.draft.edit(self.dictation.receive(text))
         }
         microphone.onFinished = { [weak self] text in
             guard let self, self.isCapturingChinese else { return }
             self.startupTimeout?.cancel()
             self.startupTimeout = nil
-            self.draft.edit(text)
+            self.draft.edit(self.dictation.receive(text))
             self.phase = .idle
             self.translate()
         }
@@ -176,7 +178,8 @@ final class AppModel {
     }
 
     func editChinese(_ text: String) {
-        guard !isBusy else { return }
+        guard canEditChinese, text != draft.chinese else { return }
+        if isCapturingChinese { dictation.edit(text) }
         draft.edit(text)
         failure = nil
     }
@@ -287,6 +290,7 @@ final class AppModel {
         }
         incoming.pauseForReply()
         turnID = UUID()
+        dictation = DictationTranscript()
         draft.edit("")
         draft.invalidate()
         failure = nil

@@ -3,6 +3,41 @@ import Foundation
 import Testing
 @testable import FriendTranslator
 
+@Test @MainActor func editingChineseDuringDictationKeepsRecordingAndSendsCorrectedText() async throws {
+    let fixture = await ConversationFixture()
+    let model = fixture.model
+    model.selectFriendAudioSource(.telegram)
+    model.startRecording()
+    try await loopUntil { model.phase == .listening }
+    fixture.microphone.onPartial?("明天去北经")
+    #expect(model.canEditChinese)
+    model.editChinese("后天去北京")
+    #expect(model.phase == .listening)
+    #expect(fixture.microphone.running)
+    fixture.microphone.onPartial?("明天去北京吃饭")
+    #expect(model.draft.chinese == "后天去北京吃饭")
+    model.finishRecording()
+    model.editChinese("后天去北京喝茶")
+    fixture.microphone.complete("明天去北京吃饭")
+    #expect(model.phase == .translating)
+    #expect(!model.canEditChinese)
+    model.editChinese("不能在发送途中修改")
+    await model.runTranslation(language: .english) { text, _ in
+        #expect(text == "后天去北京喝茶")
+        return "Tea in Beijing the day after tomorrow."
+    }
+    #expect(fixture.speech.texts == ["Tea in Beijing the day after tomorrow."])
+    #expect(fixture.speech.device == telegramTestBridge)
+    #expect(model.isSendingToTelegram)
+    model.stop()
+
+    model.startRecording()
+    try await loopUntil { model.phase == .listening }
+    fixture.microphone.onPartial?("新的回复")
+    #expect(model.draft.chinese == "新的回复")
+    model.stop()
+}
+
 @Test @MainActor func listeningTogglePausesAndResumesWithoutClearingText() async throws {
     let fixture = await ConversationFixture()
     let model = fixture.model

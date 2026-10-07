@@ -3,6 +3,36 @@ import Foundation
 import Testing
 @testable import FriendTranslator
 
+@Test func dictationKeepsCorrectionsWhileNewSpeechAndFinalRevisionsArrive() {
+    var transcript = DictationTranscript()
+    #expect(transcript.receive("明天去北经") == "明天去北经")
+    transcript.edit("后天去北京")
+    #expect(transcript.receive("明天去北京吃饭") == "后天去北京吃饭")
+    #expect(transcript.receive("明天去北京吃饭。") == "后天去北京吃饭。")
+    transcript.edit("后天去北京喝茶。")
+    #expect(transcript.receive("明天去北京吃饭，下午见。") == "后天去北京喝茶。下午见。")
+}
+
+@Test func dictationPreservesInsertionsDeletionsAndTemporaryRecognitionRetractions() {
+    var transcript = DictationTranscript()
+    _ = transcript.receive("明天一起去上海")
+    transcript.edit("后天去上海👋")
+    #expect(transcript.receive("明天一起") == "后天去上海👋")
+    #expect(transcript.receive("明天一起去上海吃饭") == "后天去上海👋吃饭")
+    #expect(transcript.receive("明天去上海吃饭") == "后天去上海👋吃饭")
+    transcript.edit("")
+    #expect(transcript.receive("明天去上海吃饭") == "")
+    #expect(transcript.receive("明天去上海吃饭，然后回来") == "，然后回来")
+}
+
+@Test func dictationDoesNotTreatMovedFinalPunctuationAsOldSpeech() {
+    var transcript = DictationTranscript()
+    _ = transcript.receive("你好。")
+    transcript.edit("您好。")
+    #expect(transcript.receive("你好。") == "您好。")
+    #expect(transcript.receive("你好，明天见。") == "您好。明天见。")
+}
+
 @Test func editsRejectLateTranslations() {
     var draft = Draft()
     draft.edit("明天见")

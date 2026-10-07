@@ -368,9 +368,11 @@ struct ContentView: View {
                         .font(InterpreterStyle.font(size: 18))
                         .scrollContentBackground(.hidden)
                         .padding(10)
-                        .disabled(model.isBusy)
+                        .disabled(!model.canEditChinese)
                         .accessibilityLabel("我的中文")
-                        .accessibilityHint(model.friendAudioSource == .telegram ? "输入或修改后，点击翻译并发送" : "输入或修改后，点击翻译并播放")
+                        .accessibilityHint(model.isCapturingChinese
+                            ? "说话时可直接修改文字，完成后点击说完了"
+                            : (model.friendAudioSource == .telegram ? "输入或修改后，点击翻译并发送" : "输入或修改后，点击翻译并播放"))
                     if model.draft.chinese.isEmpty {
                         Text(model.isCapturingChinese ? "正在听你说话…" : "输入中文，或点击“我来说”")
                             .font(InterpreterStyle.font(size: 18)).foregroundStyle(.secondary)
@@ -436,16 +438,17 @@ struct ContentView: View {
                         Label(model.friendAudioSource == .telegram ? "试听" : (model.draft.sent ? "重播" : "播放译文"), systemImage: "speaker.wave.2")
                     }
                     .disabled(model.isBusy || !model.draft.canPlay)
-                    if model.friendAudioSource == .telegram {
-                        Button(action: model.sendTranslation) {
-                            Label("发送译文", systemImage: "paperplane.fill")
-                        }
-                        .disabled(model.isBusy || !model.draft.canPlay)
-                        .help("把当前译文播放到 Telegram 通话；不会重新翻译")
-                    }
                     Spacer(minLength: 0)
-                    Button(action: model.translate) {
-                        Label(model.friendAudioSource == .telegram ? "翻译并发送" : "翻译并播放", systemImage: model.friendAudioSource == .telegram ? "paperplane.fill" : "play.fill")
+                    Button {
+                        if model.friendAudioSource == .telegram && model.draft.canPlay {
+                            model.sendTranslation()
+                        } else {
+                            model.translate()
+                        }
+                    } label: {
+                        Label(model.friendAudioSource == .telegram
+                            ? (model.draft.canPlay ? "再次发送" : "翻译并发送")
+                            : "翻译并播放", systemImage: model.friendAudioSource == .telegram ? "paperplane.fill" : "play.fill")
                     }
                     .disabled(model.isBusy || model.language == nil || model.draft.chinese.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
